@@ -3,8 +3,8 @@
 
 from setuptools import setup, find_packages
 
-setup(name='gym_banana',
-      version='0.0.2',
+setup(name='algo-selector',
+      version='0.0.1',
       install_requires=['gym>=0.2.3',
                         'pandas',
                         'cfg_load'],
