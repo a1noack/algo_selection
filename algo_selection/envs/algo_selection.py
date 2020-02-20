@@ -9,14 +9,8 @@ to run while taking into consideration accuracy of
 algorithms and the amount of time remaining.
 """
 
-# core modules
-#import logging.config
-#import math
-#import pkg_resources
-#import random
-
+import random
 from gym import spaces
-#import cfg_load
 import gym
 import numpy as np
 import pandas as pd
@@ -100,6 +94,3 @@ class AlgoSelection(gym.Env):
     def _render(self, mode='human', close=False):
         return
 
-    def seed(self, seed):
-        random.seed(seed)
-        np.random.seed
