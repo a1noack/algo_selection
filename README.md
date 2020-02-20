@@ -16,9 +16,9 @@ pip install -e .
 
 ```
 import gym
-import algo_selector
+import algo_selection
 
-env = gym.make('algo_selector-v0')
+env = gym.make('algo_selection-v0')
 ```
 
 ## The Environment
