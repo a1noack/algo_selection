@@ -2,69 +2,44 @@
 # -*- coding: utf-8 -*-
 
 """
-Simulate the simplifie Banana selling environment.
+Simulate the TA1 algorithm selection environment.
 
-Each episode is selling a single banana.
+The agent sequentially selects which TA1 algorithms 
+to run while taking into consideration accuracy of 
+algorithms and the amount of time remaining.
 """
 
 # core modules
-import logging.config
-import math
-import pkg_resources
-import random
+#import logging.config
+#import math
+#import pkg_resources
+#import random
 
-# 3rd party modules
 from gym import spaces
-import cfg_load
+#import cfg_load
 import gym
 import numpy as np
+import pandas as pd
+import statistics as st
 
 
-path = 'config.yaml'  # always use slash in packages
-filepath = pkg_resources.resource_filename('gym_banana', path)
-config = cfg_load.load(filepath)
-logging.config.dictConfig(config['LOGGING'])
-
-
-def get_chance(x):
-    """Get probability that a banana will be sold at price x."""
-    e = math.exp(1)
-    return (1.0 + e) / (1. + math.exp(x + 1))
-
-
-class BananaEnv(gym.Env):
-    """
-    Define a simple Banana environment.
-
-    The environment defines which actions can be taken at which point and
-    when the agent receives which reward.
-    """
-
-    def __init__(self):
-        self.__version__ = "0.1.0"
-        logging.info("BananaEnv - Version {}".format(self.__version__))
-
-        # General variables defining the environment
-        self.MAX_PRICE = 2.0
-        self.TOTAL_TIME_STEPS = 2
-
-        self.curr_step = -1
-        self.is_banana_sold = False
-
-        # Define what the agent can do
-        # Sell at 0.00 EUR, 0.10 Euro, ..., 2.00 Euro
-        self.action_space = spaces.Discrete(21)
-
-        # Observation is the remaining time
-        low = np.array([0.0,  # remaining_tries
-                        ])
-        high = np.array([self.TOTAL_TIME_STEPS,  # remaining_tries
-                         ])
-        self.observation_space = spaces.Box(low, high, dtype=np.float32)
-
-        # Store what the agent tried
-        self.curr_episode = -1
-        self.action_episode_memory = []
+class AlgoSelection(gym.Env):
+    def __init__(self, data_path, budget, stdev_thresh):
+        self._load_datafile()
+        self.budget = budget
+        self.preds = []
+        self.time = 0
+        self.index = 0
+        self.episode_done = False
+        self.curr_episode = 0
+        self.stdev_thresh = stdev_thresh
+        self.curr_state = np.zeros(self.num_algos)
+    
+    def _load_datafile(data_path):
+        data = pd.read_csv(data_path, sep='\t').values
+        self.X, self.Y = data[:, 0], data[:, 1]
+        self.algos = data[:, 2:]
+        self.num_algos = self.algos.shape[1]
 
     def step(self, action):
         """
@@ -96,38 +71,14 @@ class BananaEnv(gym.Env):
                  However, official evaluations of your agent are not allowed to
                  use this for learning.
         """
-        if self.is_banana_sold:
-            raise RuntimeError("Episode is done")
-        self.curr_step += 1
-        self._take_action(action)
-        reward = self._get_reward()
-        ob = self._get_state()
-        return ob, reward, self.is_banana_sold, {}
-
-    def _take_action(self, action):
-        self.action_episode_memory[self.curr_episode].append(action)
-        self.price = ((float(self.MAX_PRICE) /
-                      (self.action_space.n - 1)) * action)
-
-        chance_to_take = get_chance(self.price)
-        banana_is_sold = (random.random() < chance_to_take)
-
-        if banana_is_sold:
-            self.is_banana_sold = True
-
-        remaining_steps = self.TOTAL_TIME_STEPS - self.curr_step
-        time_is_over = (remaining_steps <= 0)
-        throw_away = time_is_over and not self.is_banana_sold
-        if throw_away:
-            self.is_banana_sold = True  # abuse this a bit
-            self.price = 0.0
-
-    def _get_reward(self):
-        """Reward is given for a sold banana."""
-        if self.is_banana_sold:
-            return self.price - 1
-        else:
-            return 0.0
+        self.current_state[action] = 1.
+        self.time += self.algos[self.index, action][1]
+        new_pred = self.algos[self.index, action][0]
+        preds.append(new_pred)
+        if st.stdev(preds) < thresh:
+            self.episode_done = True
+        
+        return self.current_state, reward, self.episode_done, {}
 
     def reset(self):
         """
@@ -137,20 +88,17 @@ class BananaEnv(gym.Env):
         -------
         observation (object): the initial observation of the space.
         """
-        self.curr_step = -1
+        self.preds = []
+        self.time = 0
+        self.index = self.index + 1
+        self.episode_done = False
         self.curr_episode += 1
-        self.action_episode_memory.append([])
-        self.is_banana_sold = False
-        self.price = 1.00
-        return self._get_state()
+        self.curr_state = np.zeros(self.num_algos)
+        
+        return self.curr_state()
 
     def _render(self, mode='human', close=False):
         return
-
-    def _get_state(self):
-        """Get the observation."""
-        ob = [self.TOTAL_TIME_STEPS - self.curr_step]
-        return ob
 
     def seed(self, seed):
         random.seed(seed)
