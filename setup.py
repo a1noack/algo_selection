@@ -3,7 +3,7 @@
 
 from setuptools import setup, find_packages
 
-setup(name='algo-selector',
+setup(name='algo_selection',
       version='0.0.1',
       install_requires=['gym>=0.2.3',
                         'pandas',
