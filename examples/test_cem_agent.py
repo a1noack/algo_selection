@@ -2,7 +2,7 @@ import gym
 import numpy as np
 import algo_selection
 import numpy as np
-from _policies import DiscreteActionPolicy
+from _policies import DiscreteActionAgent
 
 def cem(f, th_mean, batch_size, n_iter, elite_frac, initial_std=1.0):
     """
@@ -40,17 +40,17 @@ def do_rollout(agent, env, num_steps):
     
 if __name__ == '__main__':
     env = gym.make('algo_selection-v0')
-    params = dict(n_iter=1000, batch_size=1000, elite_frac=0.05)
+    params = dict(n_iter=100, batch_size=10000, elite_frac=0.01)
     num_steps = 20
 
     def noisy_evaluation(theta):
-        agent = DiscreteActionPolicy(theta)
+        agent = DiscreteActionAgent(theta)
         rew, T = do_rollout(agent, env, num_steps)
         return rew
 
-    # Train the agent, and snapshot each stage
+    # train the agent
     for (i, iterdata) in enumerate(cem(f=noisy_evaluation, th_mean=np.zeros((env.num_algos, env.num_algos + 1)), **params)):
         print('Iteration %2i. Episode mean reward: %7.3f'%(i, iterdata['y_mean']))
-        agent = DiscreteActionPolicy(iterdata['theta_mean'])
+        agent = DiscreteActionAgent(iterdata['theta_mean'])
 
     env.close()

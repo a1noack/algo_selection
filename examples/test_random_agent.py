@@ -1,31 +1,31 @@
 import gym
 import algo_selection
 import time
-
-class RandomAgent(object):
-    """The world's simplest agent!"""
-    def __init__(self, env):
-        self.env = env
-
-    def act(self, observation, reward, done):
-        return self.env.random_action()
+from _policies import RandomAgent
+    
+def do_rollout(agent, env, num_steps):
+    total_rew = 0
+    ob = env.reset()
+    for t in range(num_steps):
+        a = agent.act(ob)
+        (ob, reward, done, _info) = env.step(a)
+        total_rew += reward
+        if done: break
+    return total_rew, t+1
     
 if __name__ == '__main__':
     env = gym.make('algo_selection-v0')
     agent = RandomAgent(env)
 
     episode_count = 100
-    reward = 0
     done = False
+    num_steps = 20
+    n_iter=10000
     
-    for i in range(episode_count):
-        ob = env.reset()
-        print("New episode with probe with index #{}".format(env.index))
-        while True:
-            next_algo = agent.act(ob, reward, done)
-            ob, reward, done, _ = env.step(next_algo)
-            print('\n\treward: {}\n'.format(reward))
-            time.sleep(1)
-            if done:
-                break
-        print('\n')
+    global_rew = 0
+    for i in range(n_iter):
+        global_rew += do_rollout(agent, env, num_steps)[0]
+    
+    print('Episode mean reward: %7.3f'%(global_rew/n_iter))
+        
+    env.close()
