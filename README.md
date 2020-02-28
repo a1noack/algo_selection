@@ -1,5 +1,5 @@
 This repository contains a PIP package which is an OpenAI environment for
-simulating an enironment in which bananas get sold.
+simulating the TA1 analytic-choosing environment.
 
 
 ## Installation
